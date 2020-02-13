@@ -1,10 +1,19 @@
 import React, { Component } from 'react'
+import ReactDataSheet from 'react-datasheet';
+import 'react-datasheet/lib/react-datasheet.css';
 import logos from './logos.svg'
 import './App.css'
 
 class App extends Component {
-  state = {
-    count: 'loading...'
+  constructor (props) {
+    super(props)
+    this.state = {
+      count: 'loading...',
+      grid: [
+        [{value: 1}, {value: 3},{value:5},{value:6},{value:7}],
+        [{value: 2}, {value: 4},{value:5},{value:6},{value:7}]
+      ]
+    }
   }
 
   componentDidMount = async () => {
@@ -38,12 +47,33 @@ class App extends Component {
               Kubernetes
             </a>
           </p>
-          <p>
-            Modify <code>src/www/App.js</code> or <code>src/api/index.js</code> to reload UI or API.
-          </p>
-          <p>
-            <code>yarn deploy</code> to build containers and deploy them to production
-          </p>
+          <ReactDataSheet
+              data={this.state.grid}
+              valueRenderer={(cell) => cell.value}
+              sheetRenderer={props => (
+                  <table className={props.className}>
+                    <thead>
+                    <tr>
+                      <th>RefDes</th>
+                      <th>Qty</th>
+                      <th>MPN</th>
+                      <th>Manufacture</th>
+                      <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {props.children}
+                    </tbody>
+                  </table>
+              )}
+              onCellsChanged={changes => {
+                const grid = this.state.grid.map(row => [...row])
+                changes.forEach(({cell, row, col, value}) => {
+                  grid[row][col] = {...grid[row][col], value}
+                })
+                this.setState({grid})
+              }}
+          />
           <hr />
           <h2>Count: {this.state.count}</h2>
           <p>
