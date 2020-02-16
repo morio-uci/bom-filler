@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@metamodules/postgres": "^1.2.1",
     "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "knex": "^0.20.9",
     "octopart": "github:jorisa/octopart",
+    "pg": "^7.18.1",
     "react": "^16.8.6",
     "react-datasheet": "^1.4.0",
     "react-dom": "^16.8.6",

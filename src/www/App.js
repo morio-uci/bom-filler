@@ -1,91 +1,137 @@
 import React, { Component } from 'react'
 import ReactDataSheet from 'react-datasheet';
 import 'react-datasheet/lib/react-datasheet.css';
-import logos from './logos.svg'
 import './App.css'
 
 class App extends Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-      count: 'loading...',
-      grid: [
-        [{value: 1}, {value: 3},{value:5},{value:6},{value:7}],
-        [{value: 2}, {value: 4},{value:5},{value:6},{value:7}]
-      ]
+    constructor (props) {
+        super(props)
+        this.state = {
+            userId: 1,
+            bomId: 1,
+            grid: []
+        }
+        this.addRow = this.addRow.bind(this)
+        this.updateRefDes = this.updateRefDes.bind(this)
+        this.updateQty = this.updateQty.bind(this)
+        this.removeRow = this.removeRow.bind(this)
+        this.updateGrid = this.updateGrid.bind(this)
+        this.addDelComponent =this.addDelComponent.bind(this)
     }
-  }
 
-  componentDidMount = async () => {
-    const { count } = await window.fetch(`/api/count`).then(res => res.json())
-    this.setState({ count })
-  }
+    async removeRow(entryId) {
+        const result = await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}`, {
+            method: 'DELETE'
+        })
+        if((await result.json()).success){
+            await this.updateGrid()
+        }
+    }
 
-  increment = async () => {
-    const { count } = await window
-      .fetch(`/api/count/increment`, { method: 'POST' })
-      .then(res => res.json())
-    this.setState({ count })
-  }
+    addDelComponent = (grid) => {
+        return grid.map((row) => {
+            let last = {}
+            last.component = (
+                <button className={'del-button'} onClick={()=>{this.removeRow(row[0].entry).then()}}>−</button>
+            )
+            last.forceComponent = true
+            return [...row, last]
+        })
+    }
 
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logos} className="App-logo" alt="logo" />
-          <p>
-            {'Learn '}
-            <a href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-              React
-            </a>
-            {', '}
-            <a href="https://expressjs.com" target="_blank" rel="noopener noreferrer">
-              Express
-            </a>
-            {', and '}
-            <a href="https://kubernetes.io" target="_blank" rel="noopener noreferrer">
-              Kubernetes
-            </a>
-          </p>
-          <ReactDataSheet
-              data={this.state.grid}
-              valueRenderer={(cell) => cell.value}
-              sheetRenderer={props => (
-                  <table className={props.className}>
-                    <thead>
-                    <tr>
-                      <th>RefDes</th>
-                      <th>Qty</th>
-                      <th>MPN</th>
-                      <th>Manufacture</th>
-                      <th>Description</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {props.children}
-                    </tbody>
-                  </table>
-              )}
-              onCellsChanged={changes => {
-                const grid = this.state.grid.map(row => [...row])
-                changes.forEach(({cell, row, col, value}) => {
-                  grid[row][col] = {...grid[row][col], value}
-                })
-                this.setState({grid})
-              }}
-          />
-          <hr />
-          <h2>Count: {this.state.count}</h2>
-          <p>
-            Call <code>/api/count/increment</code>
-            <button onClick={this.increment} className="App-button">
-              Go
-            </button>
-          </p>
-        </header>
-      </div>
-    )
-  }
+    async updateGrid() {
+        let { grid } = await window.fetch(`/api/v1/bom/${this.state.bomId}`).then(res => res.status === 404 ? {grid: []} : res.json())
+        grid = this.addDelComponent(grid)
+        this.setState({ grid })
+    }
+    componentDidMount = async () => {
+        this.updateGrid()
+    }
+
+    async addRow() {
+        await window.fetch(`/api/v1/bom/${this.state.bomId}`, {method: 'POST'}).then(async (res) => {
+            if (res.status === 200) {
+                this.updateGrid()
+            }
+        })
+    }
+
+    async updateRefDes(entryId, refDes) {
+        await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}/ref-des`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({refDes: refDes})
+        })
+    }
+    async updateQty(entryId, qty) {
+        await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}/qty`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({qty: parseInt(qty)})
+        })
+    }
+
+
+    render() {
+        return (
+            <div className="App">
+                <header className="App-header">
+                    <h1>Bill of Materials Auto Filler</h1>
+                    <p>
+                        Columns headers in green have been implemented with database backend.
+                        So have the + and - buttons.
+                        The rest is a work in progress.
+                    </p>
+                </header>
+                <main>
+                    <ReactDataSheet
+                        data={this.state.grid}
+                        valueRenderer={(cell) => cell.value}
+                        sheetRenderer={props => (
+                            <table className={props.className}>
+                                <thead>
+                                <tr>
+                                    <th className={'implemented'}>RefDes</th>
+                                    <th className={'implemented'}>Qty</th>
+                                    <th>MPN</th>
+                                    <th>Manufacture</th>
+                                    <th>Description</th>
+                                    <th>Footprint</th>
+                                    <th>Pins</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {props.children}
+                                </tbody>
+                            </table>
+                        )}
+                        onCellsChanged={changes => {
+                            const grid = this.state.grid.map(row => [...row])
+                            changes.forEach(({cell, row, col, value}) => {
+                                grid[row][col] = {...grid[row][col], value}
+                                switch(col) {
+                                    case 0 :
+                                        this.updateRefDes(cell.entry, value).then()
+                                        break;
+                                    case 1 :
+                                        this.updateQty(cell.entry, value).then()
+                                        break;
+                                }
+                            })
+                            this.setState({grid})
+                        }}
+                    />
+                    <button className={'add-button'} onClick={this.addRow}>
+                        +
+                    </button>
+                </main>
+            </div>
+        )
+    }
 }
 
 export default App

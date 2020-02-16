@@ -25,3 +25,22 @@ hr {
   border: 1px solid #323743;
   margin: 40px;
 }
+
+.implemented {
+  color: green;
+}
+
+.del-button {
+  color: white;
+  font-size: x-large;
+  font-weight: bold;
+  background-color: red;
+  border-radius: 10px;
+}
+
+
+.add-button {
+  border-radius: 10px;
+  font-size: x-large;
+  font-weight: bold;
+}
