@@ -1,5 +1,5 @@
 import knex from 'knex'
 
-import {development} from './knexfile'
+import config from '../../knexfile'
 
-export default knex(development)
+export default knex(config[process.env.NODE_ENV || 'development'])

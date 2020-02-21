@@ -31,9 +31,17 @@
   "scripts": {
     "start": "bash bin/dev.sh",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test-react": "react-scripts test",
     "eject-www": "react-scripts eject",
-    "psql": "export $(cat .env | xargs) && PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_SERVICE_HOST} -p ${POSTGRES_SERVICE_PORT} -U ${POSTGRES_USER} ${POSTGRES_DB}"
+    "make-db": "while read -r line; do export $line; done < .env; dropdb $POSTGRES_DB; createdb $POSTGRES_DB",
+    "make-test-db": "while read -r line; do export $line; done < .env; dropdb $POSTGRES_TEST_DB; createdb $POSTGRES_TEST_DB",
+    "migrate": "knex migrate:latest",
+    "seed": "knex seed:run",
+    "test-seed": "npm run seed -- --env=test",
+    "reset-db": "npm run make-db; npm run migrate; npm run seed",
+    "reset-test-db": "npm run make-test-db; npm run migrate -- --env=test; npm run test-seed",
+    "test": "NODE_ENV=test mocha --exit -r esm",
+    "db-test": "npm run reset-test-db; npm run test"
   },
   "eslintConfig": {
     "extends": "react-app"
