@@ -48,8 +48,8 @@ bom.getAllTableData = async (bomId) => {
 // UPDATE
 bom.updateRefDes = async (entryId, refDes) => {
     try {
-        await knex('bom_entries').where('id', entryId).update({ref_des: refDes})
-        return {success: true}
+        const result = await knex('bom_entries').where('id', entryId).update({ref_des: refDes})
+        return {success: result === 1}
     }
     catch(err) {
         return {success: false}
@@ -58,8 +58,8 @@ bom.updateRefDes = async (entryId, refDes) => {
 
 bom.updateQty = async (entryId, qty) => {
     try {
-        await knex('bom_entries').where('id', entryId).update({qty: qty})
-        return {success: true}
+        const result = await knex('bom_entries').where('id', entryId).update({qty: qty})
+        return {success: result === 1}
     }
     catch(err) {
         return {success: false}
@@ -92,8 +92,8 @@ bom.updatePins = (entryId, pins) => {
 // DELETE
 bom.deleteRow = async (entryId) => {
     try {
-        await knex('bom_entries').where('id', entryId).del()
-        return {success: true}
+        const result = await knex('bom_entries').where('id', entryId).del()
+        return {success: result === 1}
     }
     catch(err) {
         return {success: false}
