@@ -57,22 +57,28 @@ class App extends Component {
     }
 
     async updateRefDes(entryId, refDes) {
-        await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}/ref-des`, {
+        const result = await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}/ref-des`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({refDes: refDes})
         })
+        if (!result.json().success) {
+            await this.updateGrid()
+        }
     }
     async updateQty(entryId, qty) {
-        await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}/qty`, {
+        const result = await window.fetch(`/api/v1/bom/${this.state.bomId}/${entryId}/qty`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({qty: parseInt(qty)})
         })
+        if (!result.json().success) {
+            await this.updateGrid()
+        }
     }
 
 

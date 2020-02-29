@@ -12,9 +12,7 @@ const BOM_ROOT = `${APP_ROOT}/bom`
 const app = express()
 app.use(express.json())
 const port = 4000
-// This will be moved into migration and seed database files once I learn those
-user.init()
-bom.init()
+
 
 app.use(BOM_ROOT, bomGetData())
 app.use(BOM_ROOT, bomAddRow())
