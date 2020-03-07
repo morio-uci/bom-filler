@@ -1,6 +1,4 @@
-const express = require('express')
-import user from './services/user'
-import bom from  './services/bom'
+import express from 'express'
 import {getData as bomGetData} from './v1/bom/getData'
 import {addRow as bomAddRow} from './v1/bom/id/addRow'
 import {updateRefDes as bomUpdateRefDes} from './v1/bom/id/entryId/ref_des/updateRefDes'
