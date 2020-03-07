@@ -1,5 +1,5 @@
 import knex from 'knex'
 
-import config from '../../knexfile'
+import {client, connection, migrations, seeds} from '../../knexfile'
 
-export default knex(config[process.env.NODE_ENV || 'development'])
+export default knex({client: client, connection: connection, migrations: migrations, seeds: seeds})
