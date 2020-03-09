@@ -3,18 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "bcrypt": "^4.0.1",
+    "bootstrap": "^4.4.1",
+    "connect-session-knex": "https://github.com/machineghost/connect-session-knex.git",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "express-session": "^1.17.0",
     "knex": "^0.20.11",
+    "nodemailer": "^6.4.4",
     "octopart": "github:jorisa/octopart",
     "pg": "^7.18.1",
     "react": "^16.8.6",
+    "react-bootstrap": "^1.0.0-beta.17",
     "react-datasheet": "^1.4.0",
     "react-dom": "^16.8.6",
-    "react-scripts": "^3.3.1"
+    "react-scripts": "^3.4.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "chai-integer": "^0.1.0",
     "concurrently": "^4.1.0",
     "cross-spawn": "^6.0.5",
     "eslint": "^6.8.0",

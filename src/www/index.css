@@ -7,6 +7,34 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+nav {
+  width: 100%;
+}
+
+@media all and (min-width: 480px) {
+  .Login, .SignUp, .BomChooser {
+    padding: 60px 0;
+  }
+  .Unauthenticated {
+    margin: 0 auto;
+    max-width: 400px;
+  }
+
+  .Login, .SignUp, .BomChooser form {
+    margin: 0 auto;
+    max-width: 320px;
+  }
+}
+
+select.form-control,
+textarea.form-control,
+input.form-control {
+  font-size: 16px;
+}
+input[type=file] {
+  width: 100%;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
   background: #323743;

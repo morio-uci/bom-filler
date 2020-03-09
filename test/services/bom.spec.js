@@ -1,10 +1,12 @@
-import {expect} from 'chai'
+import chai, {expect} from 'chai'
+import chaiInteger from 'chai-integer'
+chai.use(chaiInteger)
 import knex from '../../src/api/database'
 import bom from '../../src/api/services/bom'
 
 describe("bom services", () => {
     const bomId = 1
-
+    const userId = 1
     describe("addRow", () => {
         describe("successfully", () => {
             beforeEach( async () => {
@@ -76,9 +78,9 @@ describe("bom services", () => {
             const refDesResult = await bom.updateRefDes(entryId, testRefDes)
             expect(refDesResult.success, "update didn't return success true").to.be.true
             const getAllTableDataResult = await bom.getAllTableData(bomId)
-            expect(getAllTableDataResult.data.grid[0][0].entry, "first row wasn't doesn't have the right entry id")
+            expect(getAllTableDataResult.grid[0][0].entry, "first row wasn't doesn't have the right entry id")
                 .to.equal(entryId)
-            expect(getAllTableDataResult.data.grid[0][0].value, "ref des didn't update to the correct value")
+            expect(getAllTableDataResult.grid[0][0].value, "ref des didn't update to the correct value")
                 .to.equal(testRefDes)
         })
 
@@ -106,9 +108,9 @@ describe("bom services", () => {
             const qtyResult = await bom.updateQty(entryId, testQty)
             expect(qtyResult.success, "update didn't return success true").to.be.true
             const getAllTableDataResult = await bom.getAllTableData(bomId)
-            expect(getAllTableDataResult.data.grid[0][1].entry, "first row wasn't doesn't have the right entry id")
+            expect(getAllTableDataResult.grid[0][1].entry, "first row wasn't doesn't have the right entry id")
                 .to.equal(entryId)
-            expect(getAllTableDataResult.data.grid[0][1].value, "qty didn't update to the correct value")
+            expect(getAllTableDataResult.grid[0][1].value, "qty didn't update to the correct value")
                 .to.equal(testQty)
         })
 
@@ -122,9 +124,9 @@ describe("bom services", () => {
             const qtyResult = await bom.updateQty(entryId, "non-interger value")
             expect(qtyResult.success, "update didn't return success false").to.be.false
             const getAllTableDataResult = await bom.getAllTableData(bomId)
-            expect(getAllTableDataResult.data.grid[0][1].entry, "first row wasn't doesn't have the right entry id")
+            expect(getAllTableDataResult.grid[0][1].entry, "first row wasn't doesn't have the right entry id")
                 .to.equal(entryId)
-            expect(getAllTableDataResult.data.grid[0][1].value, "qty didn't remain as the original value")
+            expect(getAllTableDataResult.grid[0][1].value, "qty didn't remain as the original value")
                 .to.equal(testQty)
         })
     })
@@ -144,16 +146,57 @@ describe("bom services", () => {
         })
 
         it('successfully gets all the data', async () => {
-            const results = await bom.getAllTableData(1);
+            const results = await bom.getAllTableData(1)
             expect(results.success, 'success was false').to.be.true
-            expect(results.data.grid[0][0].entry, "first entry wasn't 1").to.be.equal(1)
-            expect(results.data.grid[1][1].value, "second entry qty wasn't 2").to.be.equal(2)
-            expect(results.data.grid, "data didn't have 3 rows").to.have.lengthOf(3)
+            expect(results.grid[0][0].entry, "first entry wasn't 1").to.be.equal(1)
+            expect(results.grid[1][1].value, "second entry qty wasn't 2").to.be.equal(2)
+            expect(results.grid, "data didn't have 3 rows").to.have.lengthOf(3)
         })
 
         it('fails when when retrieving a non existent bomId', async () => {
-            const results = await bom.getAllTableData(999);
+            const results = await bom.getAllTableData(999)
             expect(results.success, 'success was true').to.be.false
+        })
+    })
+
+    describe("createBom", ()=> {
+        let createdBomId = null
+        afterEach(async ()=>{
+            if (createdBomId) {
+                await knex('boms').where('id', '=', createdBomId).del()
+            }
+        })
+
+        it('creates a bom', async () => {
+            const results = await bom.createBom(userId, "My New Bom")
+            if(results.success) {
+                createdBomId = results.id
+            }
+            expect(results.success, "success was not true").to.be.true
+            expect(results.id).to.be.an.integer()
+            expect(results.name).to.be.equal("My New Bom")
+        })
+
+        it("it doesn't create a bom with an invalid user", async () => {
+            const results = await bom.createBom(9999, "My New Bom")
+            if(results.success) {
+                createdBomId = results.id
+            }
+            expect(results.success).to.be.false
+        })
+    })
+    describe("listBoms", ()=> {
+
+        it('list a bom for user', async () => {
+            const results = await bom.listBoms(userId)
+            expect(results.success, "success was not true").to.be.true
+            expect(results.data, 'data did not match').to.have.ordered.deep.members([{id: 1, name: 'Demo Bom'}])
+        })
+
+        it("it returns an empty list for a non-existing user", async () => {
+            const results = await bom.listBoms(9999)
+            expect(results.success).to.be.true
+            expect(results.data).to.be.empty
         })
     })
 })
