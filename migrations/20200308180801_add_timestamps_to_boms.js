@@ -53,11 +53,11 @@ export const down = async knex => {
     })
 
     await knex.schema.alterTable('bom_entries', bom_entries => {
-        boms_entires.dropColumns(['created_on', 'updated_on'])
+        bom_entries.dropColumns(['created_on', 'updated_on'])
     })
 
-    await knex.raw(`DROP TRIGGER IF EXISTS update_boms_modtime`)
-    await knex.raw(`DROP TRIGGER IF EXISTS update_bom_entires_modtime`)
+    await knex.raw(`DROP TRIGGER IF EXISTS update_boms_modtime ON boms`)
+    await knex.raw(`DROP TRIGGER IF EXISTS update_bom_entires_modtime ON bom_entries`)
     await knex.raw(`DROP FUNCTION IF EXISTS update_updated_on_column()`)
     await knex.raw(`DROP FUNCTION IF EXISTS update_updated_on_and_boms_updated_on_column()`)
 
