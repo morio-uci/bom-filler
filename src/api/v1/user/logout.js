@@ -6,7 +6,8 @@ export const logout = () => {
         if(req.session.user) {
             req.session.user = null
             res.json({success: true})
-        } {
+        }
+        else {
             res.json({success: false})
         }
     })

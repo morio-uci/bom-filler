@@ -15,6 +15,7 @@ import {create as bomCreate} from './v1/bom/create'
 import {login as userLogin} from './v1/user/login'
 import {signUp as userSignUp} from './v1/user/signUp'
 import {auth as userAuth} from './v1/user/auth'
+import {logout as userLogout} from "./v1/user/logout"
 
 const APP_ROOT = '/api/v1'
 const BOM_ROOT = `${APP_ROOT}/bom`
@@ -68,6 +69,7 @@ app.use(BOM_ROOT, bomCreate())
 app.use(USER_ROOT, userSignUp())
 app.use(USER_ROOT, userLogin())
 app.use(USER_ROOT, userAuth())
+app.use(USER_ROOT, userLogout())
 app.use((err, req, res, next) => {
     console.log(err.stack)
     res.status(500).json({success: false})

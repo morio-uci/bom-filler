@@ -18,7 +18,7 @@ class App extends Component {
     authUser = async () => {
         try {
             const result = await window.fetch(`/api/v1/user/auth`)
-            this.setState({userAuth: result.json()})
+            this.setState({userAuth: await result.json()})
         }
         catch (e) {
             console.log("Auth raised an error", e.message)
@@ -28,7 +28,7 @@ class App extends Component {
 
     logout = async () => {
         try {
-            const result = await window.fetch(`/api/v1/user/logout`)
+            await window.fetch(`/api/v1/user/logout`)
             this.setState( {userAuth: {success: false}})
         }
         catch (e) {
