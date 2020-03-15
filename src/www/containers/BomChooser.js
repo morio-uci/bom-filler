@@ -46,7 +46,6 @@ const BomChooser = (props) => {
                 setMessage(null)
             } else {
                 setBomList({data: []})
-                setMessage({variant: "danger", message: "Failed to create new BOM"})
             }
         }
         else {

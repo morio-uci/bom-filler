@@ -1,9 +1,15 @@
 require('dotenv').config()
 import express from 'express'
 import session from 'express-session'
+import graphqlHTTP  from 'express-graphql'
+import { makeExecutableSchema } from 'graphql-tools'
 // import ConnectSessionKnex from 'connect-session-knex'
 import knex from './database'
 
+import typeDefs from './graphql/schema'
+import resolvers from './graphql/resolvers'
+import bom from './services/bom'
+import user from './services/user'
 import {getData as bomGetData} from './v1/bom/id/getData'
 import {addRow as bomAddRow} from './v1/bom/id/addRow'
 import {updateRefDes as bomUpdateRefDes} from './v1/bom/id/entryId/ref_des/updateRefDes'
@@ -40,6 +46,8 @@ const app = express()
 
  */
 
+const env = process.env.NODE_ENV || 'development'
+
 app.use(session({
  //   store: new KnexSessionStore({ knex: knex }),
     secret: process.env.SESSION_SECRET || 'this is not a very secret secret',
@@ -49,6 +57,17 @@ app.use(session({
 }))
 app.use(express.json())
 // check authorization on all BOM routes
+
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+app.use(
+    APP_ROOT+"/graphql",
+    graphqlHTTP((request) => ({
+        schema,
+        context: {request, services: {bom, user}},
+        graphiql: env === 'development'
+    }))
+);
+
 app.use(BOM_ROOT, express.Router().use((req, res, next) => {
     if(req.session.user) {
         next()
@@ -58,6 +77,9 @@ app.use(BOM_ROOT, express.Router().use((req, res, next) => {
         res.status(401).end()
     }
 }))
+
+
+
 app.use(BOM_ROOT, bomGetData())
 app.use(BOM_ROOT, bomAddRow())
 app.use(BOM_ROOT, bomUpdateRefDes())

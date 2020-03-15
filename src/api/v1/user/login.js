@@ -9,7 +9,6 @@ export const login = () => {
                 const result = await user.getUserWithUsernameAndPass(req.body.username, req.body.password)
                 req.session.user = result.success ? result : null
                 res.json(result)
-
             }
             else {
                 res.json({success: false})

@@ -1,29 +1,37 @@
 import {Button, Form, Alert} from "react-bootstrap"
 import React, {useState} from "react"
+import { useMutation } from 'react-apollo'
+import { gql } from 'apollo-boost';
 
 const Login = (props) => {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
-    const [message, setMessage] = useState(null)
+
+    const LOGIN_QUERY = gql`
+        mutation Login($credentials: CredentialsInput!) {
+            userLogin(credentials: $credentials ) {
+                success
+                user {
+                    id
+                    username
+                    name
+                    email
+                }
+            }
+        }
+    `
+     const [login, {loading: loggingIn, error: loginError}] = useMutation(LOGIN_QUERY, { onCompleted: ({userLogin}) => {
+
+         if (userLogin.success)
+         {
+             props.onAuthChange(userLogin)
+         }
+     }});
 
      const handleSubmit = async event => {
-        event.preventDefault()
-        setMessage({variant: "primary", message: "Logging in..."})
-        const result = await window.fetch(`/api/v1/user/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({username, password})
-        })
-        const resBody = await result.json()
-        if (resBody.success) {
-            props.onAuthChange(resBody)
-        }
-        else {
-            setPassword("")
-            setMessage({variant: "danger", message: "Failed to login, try again"})
-        }
+         event.preventDefault()
+         await login({variables: {credentials: {username, password}}})
+         setPassword("")
     }
 
     function validateForm() {
@@ -34,7 +42,8 @@ const Login = (props) => {
     return (
         <div className="Login">
             <form onSubmit={handleSubmit}>
-                {message === null ? ("") : <Alert variant={message.variant}>{message.message}</Alert>}
+                {loggingIn && <Alert variant="primary">Logging in...</Alert>}
+                {loginError && <Alert variant="danger">Failed to login, try again"</Alert>}
                 <Form.Group controlId="login-username" size="lg">
                     <Form.Control
                         autoFocus

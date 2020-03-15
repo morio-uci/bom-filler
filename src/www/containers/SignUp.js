@@ -1,47 +1,59 @@
 import {Button, Form, Alert} from "react-bootstrap"
 import React, {useState} from "react"
+import { gql } from 'apollo-boost';
+import { useMutation} from 'react-apollo';
 
 const SignUp = (props) => {
+    const SIGN_UP = gql`
+        mutation SignUp($signUp: SignUpInput!) {
+            userSignUp(signUp: $signUp) {
+                success
+                reason
+                user {
+                    id
+                    username
+                    name
+                    email
+                }
+            }
+        }
+    `
+
     const [name, setName] = useState("")
     const [username, setUsername]  = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [message, setMessage] = useState(null)
-    async function handleSubmit(event) {
-        event.preventDefault()
-        setMessage({variant: "primary", message: "Signing up..."})
-        const result = await window.fetch(`/api/v1/user/signup`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({username, name, email, password})
-        })
-        const resBody = await result.json()
-        if (resBody.success) {
-            props.onAuthChange(resBody)
-        }
-        else {
-            if (resBody.hasOwnProperty('reason')) {
-                if(resBody.reason === 'username is already taken') {
-                    setUsername("")
-                }
-                setMessage({variant: "danger", message: `Failed to sign up, ${resBody.reason}`})
+
+    const [signUp, {loading: signingUp, error: signUpError}] = useMutation(SIGN_UP,
+        {onCompleted: ({userSignUp}) => {
+            if (userSignUp.success) {
+                setMessage(null)
+                props.onAuthChange(userSignUp)
             }
             else {
-
-                setMessage({variant: "danger", message: "Failed to sign up, try again"})
+                if (userSignUp.hasOwnProperty('reason')) {
+                    setMessage({variant: 'danger', message: userSignUp.reason})
+                } else {
+                    setMessage({variant: "danger", message: "Failed to sign up, try again"})
+                }
             }
-            setPassword("")
-            setConfirmPassword("")
         }
+    })
+    async function handleSubmit(event) {
+        event.preventDefault()
+
+        await signUp({variables: {
+            signUp: {credentials: {username, password}, name, ...(email !== '' && {email})}
+        }})
+        setPassword("")
+        setConfirmPassword("")
     }
 
     function validateForm() {
         return username.length >0
             && name.length > 0
-            && email.length > 0
             && password.length > 0
             && password === confirmPassword
     }
@@ -49,21 +61,23 @@ const SignUp = (props) => {
 
     return (
         <div className="SignUp">
-            {message === null ? ("") : <Alert variant={message.variant}>{message.message}</Alert>}
+            {signingUp && <Alert variant="info">Signing up...</Alert>}
+            {signUpError && <Alert variant="error">Attempting to sing up, try again</Alert>}
+            {message !== null && <Alert variant={message.variant}>{message.message}</Alert>}
             <form onSubmit={handleSubmit}>
                 <Form.Group controlId="signup-username" size="lg">
                     <Form.Control
                         autoFocus
                         placeholder="Username"
                         value={username}
-                        onChange={e => setUsername(e.target.value)}
+                        onChange={e => setUsername(e.target.value.trim())}
                     />
                 </Form.Group>
                 <Form.Group controlId="signup-name" size="lg">
                     <Form.Control
                         placeholder="Your Name"
                         value={name}
-                        onChange={e => setName(e.target.value)}
+                        onChange={e => setName(e.target.value.trim())}
                     />
                 </Form.Group>
                 <Form.Group controlId="signup-email" size="lg">
@@ -71,14 +85,14 @@ const SignUp = (props) => {
                         placeholder="Email"
                         type="email"
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={e => setEmail(e.target.value.trim())}
                     />
                 </Form.Group>
                 <Form.Group controlId="signup-password" size="lg">
                     <Form.Control
                         placeholder="Password"
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={e => setPassword(e.target.value.trim())}
                         type="password"
                     />
                 </Form.Group>
@@ -86,7 +100,7 @@ const SignUp = (props) => {
                     <Form.Control
                         placeholder="Confirm Password"
                         value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
+                        onChange={e => setConfirmPassword(e.target.value.trim())}
                         type="password"
                     />
                 </Form.Group>

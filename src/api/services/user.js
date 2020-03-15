@@ -7,18 +7,22 @@ user.createUser = async (username, name, email, password) => {
         || password.toUpperCase() === password.toLowerCase() //  have alphabetic characters
         || password.toLowerCase() === password) // have mixed upper and lower case
     {
-        return {success: false, reason: "password needs to be 7 or more character of mixed case, number and symbols are optional"}
+        return {success: false,
+            reason: "password needs to be 7 or more character of mixed case, number and symbols are optional"}
     }
     try {
         const result = await knex('users')
-            .insert({username: username, name: name, email: email, password: await hashPassword(password)})
+            .insert({username: username, name: name, ...(email !== null && {email}),
+                password: await hashPassword(password)})
             .returning(['id', 'username', 'name', 'email'])
         return {
             success: true,
-            id: result[0].id,
-            username: result[0].username,
-            name: result[0].name,
-            email: result[0].email
+            user: {
+                id: result[0].id,
+                username: result[0].username,
+                name: result[0].name,
+                ...(result[0].email !== null && {email: result[0].email})
+            }
         }
 
     }
@@ -38,10 +42,12 @@ user.getUserWithUsernameAndPass = async (username, password) => {
         if (result.length === 1 && (await compareHashed(password, result[0].password))) {
             return {
                 success: true,
-                id: result[0].id,
-                username: result[0].username,
-                name: result[0].name,
-                email: result[0].email
+                user: {
+                    id: result[0].id,
+                    username: result[0].username,
+                    name: result[0].name,
+                    ...(result[0].email !== null && {email: result[0].email})
+                }
             }
         }
         return { success: false }
