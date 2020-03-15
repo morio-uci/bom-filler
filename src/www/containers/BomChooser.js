@@ -1,76 +1,62 @@
 import {Alert, Button, Form, Accordion, Card} from "react-bootstrap"
-import React, {useState, useEffect} from "react"
+import React, {useState} from "react"
+import { useQuery, useMutation } from 'react-apollo'
+import { gql } from 'apollo-boost';
 
 const BomChooser = (props) => {
-    const [bomList, setBomList] = useState({data: []})
+    const BOM_LIST = gql`
+        query BomList {
+            bomList {
+                success
+                bomNames {
+                    id
+                    name
+                }   
+            }
+        }
+    `
+    const CREATE_BOM = gql`
+        mutation bomCreate($name: String!) {
+            bomCreate(name: $name) {
+                success
+                bom {
+                    id
+                    name
+                }
+            }
+        }
+    `
+
+    const {data, refetch: getBomList, loading: loadingBomList, error: bomListError} = useQuery(BOM_LIST)
+    const [createBom, {loading: creatingBom, error: createBomError}] = useMutation(CREATE_BOM, {
+        onCompleted: async ({bomCreate}) => {
+            if (bomCreate.success) {
+                props.onBomIdChange(bomCreate.bom.id)
+                setBomName("")
+                await getBomList()
+            }
+            else {
+                setMessage({variant: "danger", message: "Failed to create new BOM"})
+            }
+        }})
     const [bomName, setBomName] = useState("")
     const [message, setMessage] = useState(null)
     const [activeKey, setActiveKey] = useState("")
-    const [isLoadingEffect, setIsLoadingEffect] = useState(false)
 
     const handleSubmit = async event => {
         event.preventDefault()
-        setMessage({variant: "primary", message: "Creating new BOM..."})
-        setBomName("")
         setActiveKey("")
-        const result = await window.fetch(`/api/v1/bom`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({name: bomName})
-        })
-        if(result.status === 200) {
-            const resBody = await result.json()
-            if (resBody.success) {
-                setMessage(null)
-                await getBomList()
-                props.onBomIdChange(resBody.id)
-            } else {
-                setMessage({variant: "danger", message: "Failed to create new BOM"})
-            }
-        }
-        else {
-            setMessage({variant: "danger", message: "Failed to create new BOM"})
-        }
+        await createBom({variables: {name: bomName.trim()}})
     }
-    const getBomList = async () => {
-        const result = await window.fetch(`/api/v1/bom`, {
-            method: 'GET'
-        })
-        const resBody = await result.json()
-
-        if(result.status === 200) {
-            if (resBody.success) {
-                setBomList(resBody)
-                setMessage(null)
-            } else {
-                setBomList({data: []})
-            }
-        }
-        else {
-            setBomList({data: []})
-            setMessage({variant: "danger", message: "Failed to create new BOM"})
-        }
-    }
-
-    useEffect( ()=> {
-
-        const runAsync = async () => {
-            setIsLoadingEffect(true)
-            await getBomList()
-            setIsLoadingEffect(false)
-        }
-        runAsync()
-    }, [])
-
 
     function validateForm() {
         return bomName.length > 0
     }
+
     return (
         <div className="BomChooser">
             {message === null ? ("") : <Alert variant={message.variant}>{message.message}</Alert>}
+            {createBomError && <Alert variant="danger">Error creating bom, try again</Alert>}
             <form onSubmit={handleSubmit}>
                 <Form.Group controlId="bomchooser-new-bom-name" size="lg">
 
@@ -88,7 +74,7 @@ const BomChooser = (props) => {
                                         value={bomName}
                                         onChange={e => setBomName(e.target.value)}
                                     />
-                                    <Button block size="lg" disabled={!validateForm()} type="submit">
+                                    <Button block size="lg" disabled={!validateForm() || creatingBom} type="submit">
                                         Create New Bom
                                     </Button>
                                 </Card.Body>
@@ -102,13 +88,15 @@ const BomChooser = (props) => {
                         as="select"
                         autoFocus
                         onChange={e => {props.onBomIdChange(e.target.value)}}
-                        value={isLoadingEffect ? "loading" : (bomList.data.length > 0 ? props.bomId : "no-boms") }
+                        value={props.bomId === '' ? "default" : props.bomId}
+                        style={bomListError ? {color: "red"} : {}}
+                        disabled = {loadingBomList || bomListError || creatingBom || props.bomId === ''}
                     >
-                        {   isLoadingEffect ?
-                            <option value="loading">Loading...</option>
-                            : bomList.data.length > 0 ?
-                                bomList.data.map((item, idx) => {
-                                        if(props.bomId === "" && idx === 0) {
+                        { loadingBomList || creatingBom ? <option value={"default"}>Loading...</option>
+                            : bomListError || ! data.bomList.success ? <option value="default">Error loading bom list</option>
+                                : data.bomList.bomNames.length > 0
+                                    ? data.bomList.bomNames.map((item, idx) => {
+                                        if (props.bomId === "" && idx === 0) {
                                             props.onBomIdChange(item.id)
                                         }
                                         return (
@@ -116,9 +104,8 @@ const BomChooser = (props) => {
                                                 {item.name}
                                             </option>
                                         )
-                                    }
-                                )
-                                :  <option value="no-boms">-- no BOMs created --</option>
+                                    })
+                                    :  <option value="default">-- no BOMs created --</option>
                         }
                     </Form.Control>
                 </Form.Group>

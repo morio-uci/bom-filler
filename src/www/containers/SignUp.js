@@ -33,6 +33,8 @@ const SignUp = (props) => {
                 props.onAuthChange(userSignUp)
             }
             else {
+                setPassword("")
+                setConfirmPassword("")
                 if (userSignUp.hasOwnProperty('reason')) {
                     setMessage({variant: 'danger', message: userSignUp.reason})
                 } else {
@@ -45,15 +47,13 @@ const SignUp = (props) => {
         event.preventDefault()
 
         await signUp({variables: {
-            signUp: {credentials: {username, password}, name, ...(email !== '' && {email})}
+            signUp: {credentials: {username, password: password}, name: name.trim(), ...(email !== '' && {email})}
         }})
-        setPassword("")
-        setConfirmPassword("")
     }
 
     function validateForm() {
         return username.length >0
-            && name.length > 0
+            && name.trim().length > 0
             && password.length > 0
             && password === confirmPassword
     }
@@ -77,7 +77,7 @@ const SignUp = (props) => {
                     <Form.Control
                         placeholder="Your Name"
                         value={name}
-                        onChange={e => setName(e.target.value.trim())}
+                        onChange={e => setName(e.target.value)}
                     />
                 </Form.Group>
                 <Form.Group controlId="signup-email" size="lg">
@@ -92,7 +92,7 @@ const SignUp = (props) => {
                     <Form.Control
                         placeholder="Password"
                         value={password}
-                        onChange={e => setPassword(e.target.value.trim())}
+                        onChange={e => setPassword(e.target.value)}
                         type="password"
                     />
                 </Form.Group>
@@ -100,11 +100,11 @@ const SignUp = (props) => {
                     <Form.Control
                         placeholder="Confirm Password"
                         value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value.trim())}
+                        onChange={e => setConfirmPassword(e.target.value)}
                         type="password"
                     />
                 </Form.Group>
-                <Button block size="lg" disabled={!validateForm()} type="submit">
+                <Button block size="lg" disabled={!validateForm() || signingUp} type="submit">
                     Sign Up
                 </Button>
             </form>

@@ -1,7 +1,20 @@
-import {auth} from "../v1/user/auth"
+const auth = (...args) => {
+    const {request: {session}, response} = args[2]
+    const fn = args.pop()
+    if (session.hasOwnProperty('user')) {
+        return fn(...args)
+    }
+    else {
+        response.status(401).end()
+    }
+
+}
+
+
 
 const resolvers =  {
     Query: {
+        /** User Queries - Authorization resolvers **/
         userAuth: (_,__, {request}) => {
             if (request.session.hasOwnProperty('user') ) {
                  return request.session.user
@@ -10,9 +23,15 @@ const resolvers =  {
             {
                 return {success: false}
             }
-        }
+        },
+
+        /** Bom Queries resolvers **/
+        bomList: (...args) => auth(...args, async (_, __, {request:{ session : {user: {user: {id}}}}, services: {bom}}) => {
+            return await bom.listBoms(parseInt(id, 10))
+        })
     },
     Mutation: {
+        /** User Mutations - Authorization resolvers **/
         userLogin: async (_,{credentials: {username, password}}, {request: {session}, services: {user}}) =>{
             const authUser = await user.getUserWithUsernameAndPass(username, password);
 
@@ -40,7 +59,12 @@ const resolvers =  {
             }
             delete session.user
             return createdUser
-        }
+        },
+
+        /** Bom Mutations resolvers **/
+        bomCreate: (...args) => auth( ...args, async (_,{name},{request:{ session : {user: {user: {id}}}}, services: {bom}}) => {
+            return await bom.createBom(parseInt(id, 10), name)
+        })
     }
 
 }

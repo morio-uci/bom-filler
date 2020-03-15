@@ -61,9 +61,9 @@ app.use(express.json())
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 app.use(
     APP_ROOT+"/graphql",
-    graphqlHTTP((request) => ({
+    graphqlHTTP((request, response) => ({
         schema,
-        context: {request, services: {bom, user}},
+        context: {request, response, services: {bom, user}},
         graphiql: env === 'development'
     }))
 );

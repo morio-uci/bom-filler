@@ -28,13 +28,32 @@ type CreatedUser {
     user: User
 }
 
+type CreatedBom {
+    success: Boolean!
+    bom: BomName    
+}
+
+type BomName {
+    id: ID!
+    name: String!
+}
+
+type BomNames {
+    success: Boolean!
+    bomNames: [BomName]
+}
+
 type Query {
     userAuth: AuthUser!
+
+    bomList: BomNames!
 }
 
 type Mutation {
     userLogin(credentials: CredentialsInput!): AuthUser!
     userSignUp(signUp: SignUpInput!): CreatedUser!
     userLogout: Boolean!
+    
+    bomCreate(name: String!): CreatedBom!
 }
 `

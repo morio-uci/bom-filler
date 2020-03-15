@@ -26,16 +26,18 @@ const Login = (props) => {
          {
              props.onAuthChange(userLogin)
          }
+         else {
+             setPassword("")
+         }
      }});
 
      const handleSubmit = async event => {
          event.preventDefault()
-         await login({variables: {credentials: {username, password}}})
-         setPassword("")
+         await login({variables: {credentials: {username, password: password.trim()}}})
     }
 
     function validateForm() {
-        return username.length > 0 && password.length > 0
+        return username.length > 0 && password.trim().length > 0
     }
 
 
@@ -49,7 +51,7 @@ const Login = (props) => {
                         autoFocus
                         placeholder="Username"
                         value={username}
-                        onChange={e => setUsername(e.target.value)}
+                        onChange={e => setUsername(e.target.value.trim())}
                     />
                 </Form.Group>
                 <Form.Group controlId="password" size="lg">

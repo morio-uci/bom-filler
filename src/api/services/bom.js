@@ -18,7 +18,7 @@ bom.createBom = async (userId, name) => {
         if (data.length === 1) {
             // Add the first empty row in the bom entries
             await bom.addRow(data[0].id)
-            return {success: true, id: data[0].id, name: data[0].name}
+            return {success: true, bom: { id: data[0].id, name: data[0].name }}
         }
         else {
             return {success: false}
@@ -75,10 +75,10 @@ bom.getAllTableData = async (bomId) => {
 bom.listBoms = async userId => {
     try {
         const data = await knex('boms')
-            .where('user_id', '=', userId)
+            .where('user_id', '=', userId, 10)
             .orderBy('updated_on', 'desc')
             .select('id', 'name')
-        return {success: true, data}
+        return {success: true, bomNames: data}
     }
     catch (e) {
         return {success: false}
