@@ -43,10 +43,39 @@ type BomNames {
     bomNames: [BomName]
 }
 
+type Grid {
+    success: Boolean!
+    grid: [[GridRow]]
+}
+
+type GridRowString {
+    entry: ID!
+    string: String
+}
+
+type GridRowBoolean {
+    entry: ID!
+    boolean: Boolean
+}
+
+type GridRowInt {
+    entry: ID!
+    int: Int
+}
+
+type GridRowFloat {
+    entry: ID!
+    float: Float
+}
+
+union GridRow = GridRowString | GridRowBoolean | GridRowInt | GridRowFloat
+
+ 
 type Query {
     userAuth: AuthUser!
 
     bomList: BomNames!
+    bomGetGrid(bomId: ID!): Grid!
 }
 
 type Mutation {

@@ -93,7 +93,7 @@ const BomChooser = (props) => {
                         disabled = {loadingBomList || bomListError || creatingBom || props.bomId === ''}
                     >
                         { loadingBomList || creatingBom ? <option value={"default"}>Loading...</option>
-                            : bomListError || ! data.bomList.success ? <option value="default">Error loading bom list</option>
+                            : bomListError || !data.bomList.success ? <option value="default">Error loading bom list</option>
                                 : data.bomList.bomNames.length > 0
                                     ? data.bomList.bomNames.map((item, idx) => {
                                         if (props.bomId === "" && idx === 0) {

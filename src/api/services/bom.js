@@ -53,21 +53,21 @@ bom.getAllTableData = async (bomId) => {
         const data = await retrieveData()
         const formattedData =
             data.map(row => [
-                    {entry: row.entry_id, value: row.ref_des},
-                    {entry: row.entry_id, value: row.qty},
-                    {entry: row.entry_id, value: row.mpn},
-                    {entry: row.entry_id, value: row.manufacturer},
-                    {entry: row.entry_id, value: row.description},
-                    {entry: row.entry_id, value: row.footprint},
-                    {entry: row.entry_id, value: row.pins},
+                    {entry: row.entry_id, string: row.ref_des, __typename: 'GridRowString'},
+                    {entry: row.entry_id, int: row.qty,  __typename: 'GridRowInt'},
+                    {entry: row.entry_id, string: row.mpn,  __typename: 'GridRowString'},
+                    {entry: row.entry_id, string: row.manufacturer,  __typename: 'GridRowString'},
+                    {entry: row.entry_id, string: row.description,  __typename: 'GridRowString'},
+                    {entry: row.entry_id, string: row.footprint, __typename: 'GridRowString'},
+                    {entry: row.entry_id, int: row.pins,  __typename: 'GridRowInt'},
                 ])
         if (data.length > 0) {
-            return {success: true, userId: data[0].user_id, grid: formattedData}
+            return {success: true, grid: formattedData}
         }
-        return {success: false, data: []}
+        return {success: false, grid: []}
     }
     catch (e) {
-        return {success: false, data: []}
+        return {success: false, grid: []}
     }
 
 }

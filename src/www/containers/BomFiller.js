@@ -1,9 +1,75 @@
-import React, { Component } from 'react'
+import React from 'react'
 import Alert from 'react-bootstrap/Alert'
+import {useState} from 'react'
 import ReactDataSheet from "react-datasheet"
 import 'react-datasheet/lib/react-datasheet.css'
 import './BomFiller.css'
+import {useQuery} from 'react-apollo'
+import { gql } from 'apollo-boost'
 
+const BomFiller = props => {
+    const GRID_QUERY = gql`
+        query GetGrid($bomId: ID!) {
+            bomGetGrid(bomId: $bomId) {
+                success       
+                grid {
+                    __typename
+                    ...on GridRowString {
+                        entry
+                        string
+                    }
+                    ...on GridRowBoolean {
+                        entry
+                        boolean
+                    }
+                    ...on GridRowInt {
+                        entry
+                        int
+                    }
+                    ...on GridRowFloat {
+                        entry
+                        float
+                    }
+                }
+            }
+        }
+    `
+    const [grid, setGrid] = useState([])
+    const [isLoading, setLoading] = useState(false)
+    const [message, setMessage] = useState(null)
+
+    const {error: gridQueryError, refetch: updateGrid } = useQuery(GRID_QUERY, {
+        variables: { bomId: props.bomId },
+        onCompleted: ({bomGetGrid}) => {
+            if (bomGetGrid.success) {
+                setGrid(addDelComponent(bomGetGrid.grid))
+            }
+            else {
+                setMessage({variant: "danger", text: "Errored when fetching the bom data"})
+                setGrid([])
+            }
+        }
+    })
+
+    const addDelComponent = (grid) => {
+        return grid.map((row) => {
+            let last = {}
+            last.component = (
+                <button className={'del-button'} onClick={()=>{this.removeRow(row[0].entry).then()}}>−</button>
+            )
+            last.forceComponent = true
+            return [...row, last]
+        })
+    }
+    return (
+        <div className="BomFiller">
+            { message !== null && <Alert variant={message.variant}>{message.text}</Alert> }
+        </div>
+    )
+
+}
+
+/*
 class BomFiller extends Component {
     constructor (props) {
         super(props)
@@ -164,5 +230,7 @@ class BomFiller extends Component {
         )
     }
 }
+
+ */
 
 export default BomFiller

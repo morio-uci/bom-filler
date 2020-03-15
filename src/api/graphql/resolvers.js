@@ -28,7 +28,11 @@ const resolvers =  {
         /** Bom Queries resolvers **/
         bomList: (...args) => auth(...args, async (_, __, {request:{ session : {user: {user: {id}}}}, services: {bom}}) => {
             return await bom.listBoms(parseInt(id, 10))
-        })
+        }),
+
+        bomGetGrid: (...args) => auth(...args, async (_, {bomId}, {services: {bom}}) => {
+            return await bom.getAllTableData(bomId);
+        }),
     },
     Mutation: {
         /** User Mutations - Authorization resolvers **/

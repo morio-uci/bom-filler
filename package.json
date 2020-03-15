@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "apollo-boost": "^0.4.7",
+    "apollo-cache-inmemory": "^1.6.5",
     "bcrypt": "^4.0.1",
     "bootstrap": "^4.4.1",
     "connect-session-knex": "https://github.com/machineghost/connect-session-knex.git",
