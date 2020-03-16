@@ -49,27 +49,53 @@ type Grid {
 }
 
 type GridRowString {
-    entry: ID!
+    entryId: ID!
     string: String
 }
 
 type GridRowBoolean {
-    entry: ID!
+    entryId: ID!
     boolean: Boolean
 }
 
 type GridRowInt {
-    entry: ID!
+    entryId: ID!
     int: Int
 }
 
 type GridRowFloat {
-    entry: ID!
+    entryId: ID!
     float: Float
 }
 
 union GridRow = GridRowString | GridRowBoolean | GridRowInt | GridRowFloat
 
+input GridRowStringInput {
+    entryId: ID!
+    string: String
+}
+
+input GridRowBooleanInput {
+    entryId: ID!
+    boolean: Boolean
+}
+
+input GridRowIntInput {
+    entryId: ID!
+    int: Int
+}
+
+input GridRowFloatInput {
+    entryId: ID!
+    float: Float
+}
+
+
+type GridCreateRow {
+    success: Boolean!
+    bomId: ID
+    entryId: ID
+}
  
 type Query {
     userAuth: AuthUser!
@@ -78,11 +104,26 @@ type Query {
     bomGetGrid(bomId: ID!): Grid!
 }
 
+input UpdateRowInput {
+    entryId: ID!
+    refDes: GridRowStringInput
+    qty: GridRowIntInput
+}
+
+type UpdateBomRow {
+    entryId: ID!
+    success: Boolean!
+    
+}
+
 type Mutation {
     userLogin(credentials: CredentialsInput!): AuthUser!
     userSignUp(signUp: SignUpInput!): CreatedUser!
     userLogout: Boolean!
     
     bomCreate(name: String!): CreatedBom!
+    bomDeleteRow(entryId: ID!): Boolean!
+    bomCreateRow(bomId: ID!): GridCreateRow!
+    bomUpdateRow(updateRowInput: UpdateRowInput!): UpdateBomRow!
 }
 `

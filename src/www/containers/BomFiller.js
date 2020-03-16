@@ -1,10 +1,10 @@
 import React from 'react'
 import Alert from 'react-bootstrap/Alert'
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import ReactDataSheet from "react-datasheet"
 import 'react-datasheet/lib/react-datasheet.css'
 import './BomFiller.css'
-import {useQuery} from 'react-apollo'
+import {useQuery, useMutation} from 'react-apollo'
 import { gql } from 'apollo-boost'
 
 const BomFiller = props => {
@@ -15,34 +15,60 @@ const BomFiller = props => {
                 grid {
                     __typename
                     ...on GridRowString {
-                        entry
+                        entryId
                         string
                     }
                     ...on GridRowBoolean {
-                        entry
+                        entryId
                         boolean
                     }
                     ...on GridRowInt {
-                        entry
+                        entryId
                         int
                     }
                     ...on GridRowFloat {
-                        entry
+                        entryId
                         float
                     }
                 }
             }
         }
     `
+
+    const ADD_ROW = gql`
+        mutation BomCreateRow($bomId: ID!) {
+            bomCreateRow(bomId: $bomId) {
+                success
+                bomId
+                entryId
+            }
+        }
+    `
+
+    const DELETE_ROW = gql`
+        mutation BomDeleteRow($entryId: ID!) {
+            bomDeleteRow(entryId: $entryId) 
+        }
+    `
+
+    const UPDATE_ROW = gql`
+        mutation BomUpdateRow($row: UpdateRowInput!) {
+            bomUpdateRow(updateRowInput: $row) {
+                success
+                entryId
+            }
+        }      
+    `
     const [grid, setGrid] = useState([])
-    const [isLoading, setLoading] = useState(false)
+    const [initialLoading, setInitialLoading] = useState(true)
     const [message, setMessage] = useState(null)
 
-    const {error: gridQueryError, refetch: updateGrid } = useQuery(GRID_QUERY, {
+    const {loading: gridLoading, error: gridQueryError, refetch: updateGrid } = useQuery(GRID_QUERY, {
+        notifyOnNetworkStatusChange: true,
         variables: { bomId: props.bomId },
-        onCompleted: ({bomGetGrid}) => {
+        onCompleted: ({bomGetGrid}) =>  {
             if (bomGetGrid.success) {
-                setGrid(addDelComponent(bomGetGrid.grid))
+                setGrid(decorateGrid(bomGetGrid.grid))
             }
             else {
                 setMessage({variant: "danger", text: "Errored when fetching the bom data"})
@@ -51,186 +77,183 @@ const BomFiller = props => {
         }
     })
 
+    const [addRow, {loading: addingRow, error: addRowError}] = useMutation(ADD_ROW, {
+        onCompleted: async ({bomCreateRow}) => {
+            if (bomCreateRow.success) {
+                setMessage(null)
+                await updateGrid( {bomId: props.bomId})
+            }
+            else {
+                setMessage({variant: "danger", text: "Error deleting the row"})
+                setGrid([])
+            }
+        }
+    })
+
+    const [updateRow, {loading: updatingRow, error: updateRowError}] = useMutation(UPDATE_ROW, {
+        onCompleted: async ({bomUpdateRow}) => {
+            if (bomUpdateRow.success)  {
+                setMessage(null)
+            }
+            else {
+                setMessage({variant: 'danger', text: "There was an issue updating a cell's data"})
+            }
+            await updateGrid({bomId: props.bomId})
+        }
+    })
+
+    const [deleteRow,{loading: deletingRow, error: deleteRowError}] = useMutation(DELETE_ROW, {
+        onCompleted: async ( {bomDeleteRow}) => {
+            if (bomDeleteRow) {
+                setMessage(null)
+                await updateGrid({bomId: props.bomId})
+            }
+            else {
+                setMessage({variant: "danger", text: "Error deleting the row"})
+                setGrid([])
+            }
+        }
+    })
+
+    useEffect(()=>{
+        if (!gridLoading && initialLoading){
+            setInitialLoading(false)
+        }
+    }, [gridLoading, initialLoading]);
+
+    const decorateGrid = (orignalGrid) => addDelComponent(orignalGrid)
+
     const addDelComponent = (grid) => {
         return grid.map((row) => {
             let last = {}
             last.component = (
-                <button className={'del-button'} onClick={()=>{this.removeRow(row[0].entry).then()}}>−</button>
+                <button className={'del-button'}
+                        onClick={async ()=>{await deleteRow({variables: {entryId: row[0].entryId}})}}
+                >−</button>
             )
             last.forceComponent = true
             return [...row, last]
         })
     }
+
+    // this is a weird one, signature is fnCellValue(cell, fn) or fnCellValue(cell, set, ...value, fn)
+    // first just returns fn(cell, cell.<type>)
+    // the other sets cell.<type> to fn(cell, cell.<type>, ...value> to value or null if value is not in the parameter list
+    // if set is true otherwise it just returns fn(cell, cell.<type>, ...value)
+
+    const fnCellValue = (...args) => {
+        const fn = args.pop()
+        const cell = args.shift()
+        const set = args.length > 0 ? args.shift() : false;
+        const value = args.length > 0 ? args : null;
+        let type = 'string'
+        switch (cell.__typename) {
+            case 'GridRowInt' :
+                type = 'int'
+                break;
+            case 'GridRowBoolean' :
+                type = 'boolean'
+                break;
+            case 'GridRowFloat' :
+                type = 'float'
+                break;
+            case 'GridRowString' :
+            default:
+                // already set to 'string'
+        }
+        return set ? (
+            value === null ?
+                cell[type] = fn(cell, cell[type])
+                : cell[type] = fn(cell, cell[type], ...value)
+            )
+            : fn(cell, cell[type])
+    }
+    const cellValue = cell => fnCellValue( cell, (_, cValue) => cValue )
+
+
+    const setCellValue = (cell, value) => fnCellValue( cell, true, value, (_, __, newValue) => newValue )
+
+
     return (
         <div className="BomFiller">
-            { message !== null && <Alert variant={message.variant}>{message.text}</Alert> }
+            <p>
+                Columns headers in green have been implemented with database backend.
+                So have the + and - buttons.
+                The rest is a work in progress.
+            </p>
+            {gridQueryError && <Alert variant="danger">Error occurred while fetching the bom data</Alert> }
+            {deleteRowError && <Alert variant="danger">Error while deleting the row</Alert> }
+            {message !== null && <Alert variant={message.variant}>{message.text}</Alert> }
+            {initialLoading ?
+                <Alert>Loading...</Alert> :
+                <ReactDataSheet
+                    data={grid}
+                    valueRenderer={(cell) => cellValue(cell)}
+                    sheetRenderer={props => (
+                        <table className={props.className}>
+                            <thead>
+                            <tr>
+                                <th className={'implemented'}>RefDes</th>
+                                <th className={'implemented'}>Qty</th>
+                                <th>MPN</th>
+                                <th>Manufacture</th>
+                                <th>Description</th>
+                                <th>Footprint</th>
+                                <th>Pins</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {props.children}
+                            </tbody>
+                        </table>
+                    )}
+                    onCellsChanged={async changes => {
+                        const newGrid = grid.map(row => [...row])
+                        const changePromises = []
+                        const colKeyMap = ['refDes', 'qty', 'mpn', 'manufacture', 'description', 'footprint', 'pins']
+                        changes.forEach(({cell, row, col, value}) => {
+                            let skip = false
+
+                            // white list working tags
+                            if(!['qty', 'refDes'].includes(colKeyMap[col]) ){
+                                skip = true
+                            }
+
+                            if (['qty', 'pins'].includes(colKeyMap[col])) {
+                                value = parseInt(value, 10)
+                                if(isNaN(value)){
+                                    skip = true
+                                }
+                            }
+
+
+
+                            if(!skip) {
+                                newGrid[row][col] = {...grid[row][col]}
+                                setCellValue(newGrid[row][col], value)
+                                let varValue = newGrid[row][col]
+                                const entryId = varValue.entryId
+                                delete varValue['__typename']
+                                changePromises.push(updateRow(
+                                    {
+                                        variables:
+                                            {row: {entryId, [colKeyMap[col]]: varValue}}
+                                    }
+                                ))
+                            }
+                        })
+                        setGrid(newGrid)
+                        await Promise.all(changePromises)
+                    }}
+
+                />
+            }
+
+            <button className={'add-button'}
+                    onClick={async ()=>{await addRow({variables: {bomId: props.bomId}})}}
+            >+</button>
         </div>
     )
-
 }
-
-/*
-class BomFiller extends Component {
-    constructor (props) {
-        super(props)
-        this.state = {
-            grid: [],
-            isLoading: false
-        }
-        this.addRow = this.addRow.bind(this)
-        this.updateRefDes = this.updateRefDes.bind(this)
-        this.updateQty = this.updateQty.bind(this)
-        this.removeRow = this.removeRow.bind(this)
-        this.updateGrid = this.updateGrid.bind(this)
-        this.addDelComponent =this.addDelComponent.bind(this)
-    }
-
-    async removeRow(entryId) {
-        const result = await window.fetch(`/api/v1/bom/${this.props.bomId}/${entryId}`, {
-            method: 'DELETE'
-        })
-        if((await result.json()).success){
-            await this.updateGrid()
-        }
-    }
-
-    addDelComponent = (grid) => {
-        return grid.map((row) => {
-            let last = {}
-            last.component = (
-                <button className={'del-button'} onClick={()=>{this.removeRow(row[0].entry).then()}}>−</button>
-            )
-            last.forceComponent = true
-            return [...row, last]
-        })
-    }
-
-    async updateGrid() {
-        const result = await window.fetch(`/api/v1/bom/${this.props.bomId}`)
-        if (result.status === 200) {
-            const response = await result.json()
-            if (response.success) {
-                let grid = []
-                grid = this.addDelComponent(response.grid)
-                this.setState({ grid })
-            }
-            else {
-                this.setState({ grid: [] })
-            }
-        }
-        else {
-            this.setState({ grid: [] })
-        }
-
-
-    }
-    componentDidMount = async () => {
-        await this.updateGrid()
-    }
-
-    componentDidUpdate = async (prevProps) => {
-        const asyncCall = async () => {
-            this.setState({isLoading: true})
-            await this.updateGrid()
-            this.setState({isLoading: false})
-        }
-
-        if(prevProps.bomId !== this.props.bomId) {
-            await asyncCall()
-        }
-    }
-
-    async addRow() {
-        await window.fetch(`/api/v1/bom/${this.props.bomId}`, {method: 'POST'}).then(async (res) => {
-            if (res.status === 200) {
-                await this.updateGrid()
-            }
-        })
-    }
-
-    async updateRefDes(entryId, refDes) {
-        const result = await window.fetch(`/api/v1/bom/${this.props.bomId}/${entryId}/ref-des`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({refDes: refDes})
-        })
-        if (! (await result.json()).success) {
-            await this.updateGrid()
-        }
-    }
-    async updateQty(entryId, qty) {
-        const result = await window.fetch(`/api/v1/bom/${this.props.bomId}/${entryId}/qty`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({qty: parseInt(qty)})
-        })
-        if (! (await result.json()).success) {
-            await this.updateGrid()
-        }
-    }
-
-
-    render() {
-        return (
-            <div className="BomFiller">
-                <p>
-                    Columns headers in green have been implemented with database backend.
-                    So have the + and - buttons.
-                    The rest is a work in progress.
-                </p>
-                {this.state.isLoading ?
-                    <Alert>Loading...</Alert> :
-                    <ReactDataSheet
-                        data={this.state.grid}
-                        valueRenderer={(cell) => cell.value}
-                        sheetRenderer={props => (
-                            <table className={props.className}>
-                                <thead>
-                                <tr>
-                                    <th className={'implemented'}>RefDes</th>
-                                    <th className={'implemented'}>Qty</th>
-                                    <th>MPN</th>
-                                    <th>Manufacture</th>
-                                    <th>Description</th>
-                                    <th>Footprint</th>
-                                    <th>Pins</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {props.children}
-                                </tbody>
-                            </table>
-                        )}
-                        onCellsChanged={changes => {
-                            const grid = this.state.grid.map(row => [...row])
-                            changes.forEach(({cell, row, col, value}) => {
-                                grid[row][col] = {...grid[row][col], value}
-                                switch (col) {
-                                    case 0 :
-                                        this.updateRefDes(cell.entry, value).then()
-                                        break;
-                                    case 1 :
-                                        this.updateQty(cell.entry, value).then()
-                                        break;
-                                    default :
-                                }
-                            })
-                            this.setState({grid})
-                        }}
-                    />
-                }
-                <button className={'add-button'} onClick={this.addRow}>
-                    +
-                </button>
-            </div>
-        )
-    }
-}
-
- */
 
 export default BomFiller

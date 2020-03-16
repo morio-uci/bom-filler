@@ -58,7 +58,12 @@ app.use(session({
 app.use(express.json())
 // check authorization on all BOM routes
 
-const schema = makeExecutableSchema({ typeDefs, resolvers });
+const schema = makeExecutableSchema({
+    typeDefs,
+    resolvers,
+    resolverValidationOptions: { requireResolversForResolveType: false }
+});
+
 app.use(
     APP_ROOT+"/graphql",
     graphqlHTTP((request, response) => ({
@@ -69,7 +74,7 @@ app.use(
 );
 
 app.use(BOM_ROOT, express.Router().use((req, res, next) => {
-    if(req.session.user) {
+    if(req.session.auth) {
         next()
     }
     else {

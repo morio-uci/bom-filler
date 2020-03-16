@@ -21,7 +21,7 @@ describe("bom services", () => {
                 let addRowResult = await bom.addRow(1)
                 expect(addRowResult.success).to.be.true
                 expect(addRowResult.bomId).to.equal(1)
-                expect(addRowResult.entry).to.equal(1)
+                expect(addRowResult.entryId).to.equal(1)
             })
         })
 
@@ -47,7 +47,7 @@ describe("bom services", () => {
         it("deletes a row", async () => {
             const deleteResult = await bom.deleteRow(entryId)
             const countResult = await knex('bom_entries').count('* AS count')
-            expect(deleteResult.success, "deleteRow success false").to.be.true
+            expect(deleteResult, "deleteRow return  not true").to.be.true
             /* count returns a string, so + cast the value as a number */
             expect(+countResult[0].count, "row count wasn't zero").to.equal(0)
         })
@@ -55,79 +55,9 @@ describe("bom services", () => {
         it("fails deleting an nonexistent bom_entries id", async () => {
             const deleteResult = await bom.deleteRow(999)
             const countResult = await knex('bom_entries').count('* AS count')
-            expect(deleteResult.success, "deleteRow success wasn't false").to.be.false
+            expect(deleteResult, "deleteRow return wasn't false").to.be.false
             /* count returns a string, so + cast the value as a number */
             expect(+countResult[0].count, "row count wasn't 1").to.equal(1)
-        })
-    })
-
-    describe("updateRefDes", () => {
-        let entryId
-        const testRefDes = 'C1,C2,C3'
-        beforeEach( async () => {
-            await knex('bom_entries').truncate()
-            const addRowResult = await bom.addRow(bomId)
-            entryId = addRowResult.entry
-        })
-
-        afterEach( async () => {
-            await knex('bom_entries').truncate()
-        })
-
-        it("successfully updates", async () => {
-            const refDesResult = await bom.updateRefDes(entryId, testRefDes)
-            expect(refDesResult.success, "update didn't return success true").to.be.true
-            const getAllTableDataResult = await bom.getAllTableData(bomId)
-            expect(getAllTableDataResult.grid[0][0].entry, "first row wasn't doesn't have the right entry id")
-                .to.equal(entryId)
-            expect(getAllTableDataResult.grid[0][0].value, "ref des didn't update to the correct value")
-                .to.equal(testRefDes)
-        })
-
-        it("fails when updating non existent entry id", async () => {
-            const refDesResult = await bom.updateRefDes(999, testRefDes)
-            expect(refDesResult.success, "update didn't return success false").to.be.false
-        })
-    })
-
-    describe("updateQty", () => {
-        let entryId
-        const testQty = 3
-
-        beforeEach( async () => {
-            await knex('bom_entries').truncate()
-            const addRowResult = await bom.addRow(bomId)
-            entryId = addRowResult.entry
-        })
-
-        afterEach( async () => {
-            await knex('bom_entries').truncate()
-        })
-
-        it("successfully updates", async () => {
-            const qtyResult = await bom.updateQty(entryId, testQty)
-            expect(qtyResult.success, "update didn't return success true").to.be.true
-            const getAllTableDataResult = await bom.getAllTableData(bomId)
-            expect(getAllTableDataResult.grid[0][1].entry, "first row wasn't doesn't have the right entry id")
-                .to.equal(entryId)
-            expect(getAllTableDataResult.grid[0][1].value, "qty didn't update to the correct value")
-                .to.equal(testQty)
-        })
-
-        it("fails when updating non existent entry id", async () => {
-            const result = await bom.updateQty(999, testQty)
-            expect(result.success, "update didn't return success false").to.be.false
-        })
-
-        it("fails when updating a non-integer value", async () => {
-            await bom.updateQty(entryId, testQty)
-            const qtyResult = await bom.updateQty(entryId, "non-interger value")
-            expect(qtyResult.success, "update didn't return success false").to.be.false
-            const getAllTableDataResult = await bom.getAllTableData(bomId)
-            expect(getAllTableDataResult.grid[0][1].entry, "first row wasn't doesn't have the right entry id")
-                .to.equal(entryId)
-            expect(getAllTableDataResult.grid[0][1].value, "qty didn't remain as the original value")
-                .to.equal(testQty)
         })
     })
 

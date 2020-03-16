@@ -5,7 +5,7 @@ const bom = {}
 bom.addRow = async (bomId) => {
     try {
         const data = await knex('bom_entries').insert({bom_id: bomId}).returning(['id', 'bom_id'])
-        return {success: true, bomId: data[0].bom_id, entry: data[0].id}
+        return {success: true, bomId: data[0].bom_id, entryId: data[0].id}
     }
     catch (err) {
         return {success: false}
@@ -39,6 +39,7 @@ bom.getAllTableData = async (bomId) => {
                 .leftJoin('footprints AS f', 'f.id', 'p.footprint_id')
                 .join('boms AS b', 'b.id', 'be.bom_id')
                 .where('be.bom_id', bomId)
+                .orderBy('be.id', 'asc')
                 .select(
                     'be.id AS entry_id',
                     'be.ref_des AS ref_des',
@@ -53,18 +54,22 @@ bom.getAllTableData = async (bomId) => {
         const data = await retrieveData()
         const formattedData =
             data.map(row => [
-                    {entry: row.entry_id, string: row.ref_des, __typename: 'GridRowString'},
-                    {entry: row.entry_id, int: row.qty,  __typename: 'GridRowInt'},
-                    {entry: row.entry_id, string: row.mpn,  __typename: 'GridRowString'},
-                    {entry: row.entry_id, string: row.manufacturer,  __typename: 'GridRowString'},
-                    {entry: row.entry_id, string: row.description,  __typename: 'GridRowString'},
-                    {entry: row.entry_id, string: row.footprint, __typename: 'GridRowString'},
-                    {entry: row.entry_id, int: row.pins,  __typename: 'GridRowInt'},
+                    {entryId: row.entry_id, string: row.ref_des, __typename: 'GridRowString'},
+                    {entryId: row.entry_id, int: row.qty,  __typename: 'GridRowInt'},
+                    {entryId: row.entry_id, string: row.mpn,  __typename: 'GridRowString'},
+                    {entryId: row.entry_id, string: row.manufacturer,  __typename: 'GridRowString'},
+                    {entryId: row.entry_id, string: row.description,  __typename: 'GridRowString'},
+                    {entryId: row.entry_id, string: row.footprint, __typename: 'GridRowString'},
+                    {entryId: row.entry_id, int: row.pins,  __typename: 'GridRowInt'},
                 ])
         if (data.length > 0) {
             return {success: true, grid: formattedData}
         }
-        return {success: false, grid: []}
+        else if (data.length == 0)
+            return {success: true, grid: []}
+        else {
+            return {success: false, grid: []}
+        }
     }
     catch (e) {
         return {success: false, grid: []}
@@ -85,6 +90,29 @@ bom.listBoms = async userId => {
     }
 }
 // UPDATE
+
+bom.updateRow = async updateRowInput => {
+    let success = true
+    const entryId = parseInt(updateRowInput.entryId, 10)
+    const simpleUpdates = {}
+
+    if(updateRowInput.hasOwnProperty('qty')) {
+        simpleUpdates.qty = updateRowInput.qty.int
+    }
+
+    if(updateRowInput.hasOwnProperty('refDes')) {
+        simpleUpdates.ref_des = updateRowInput.refDes.string
+    }
+    console.log(simpleUpdates)
+    try {
+        const result = await knex('bom_entries').where('id', '=', entryId).update(simpleUpdates)
+    }
+    catch(err) {
+        success = false
+    }
+    // try the other updates when I'm ready but for now, return
+    return {entryId, success}
+}
 bom.updateRefDes = async (entryId, refDes) => {
     try {
         const result = await knex('bom_entries').where('id', entryId).update({ref_des: refDes})
@@ -132,10 +160,10 @@ bom.updatePins = (entryId, pins) => {
 bom.deleteRow = async (entryId) => {
     try {
         const result = await knex('bom_entries').where('id', entryId).del()
-        return {success: result === 1}
+        return result === 1
     }
     catch(err) {
-        return {success: false}
+        return false
     }
 }
 

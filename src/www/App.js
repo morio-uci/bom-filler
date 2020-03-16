@@ -32,7 +32,7 @@ const App = props => {
         setUserAuth(userAuth)
     }})
 
-    const [logout, {loading: loggingOut, error: logoutError }] = useMutation(LOGOUT, {onCompleted: ({userLogout}) =>{
+    const [logout, {loading: loggingOut, error: logoutError }] = useMutation(LOGOUT, {onCompleted: () =>{
             setUserAuth({success:false})
     }})
 
