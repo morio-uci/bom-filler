@@ -36,7 +36,7 @@ describe("bom services", () => {
         beforeEach( async () => {
             await knex('bom_entries').truncate()
             const addRowResult = await bom.addRow(bomId)
-            entryId = addRowResult.entry
+            entryId = addRowResult.entryId
 
         })
 
@@ -77,56 +77,54 @@ describe("bom services", () => {
 
         it('successfully gets all the data', async () => {
             const results = await bom.getAllTableData(1)
-            expect(results.success, 'success was false').to.be.true
-            expect(results.grid[0][0].entry, "first entry wasn't 1").to.be.equal(1)
-            expect(results.grid[1][1].value, "second entry qty wasn't 2").to.be.equal(2)
+            expect(results.success, 'success was not true').to.be.true
+            expect(results.grid[0][0].entryId, "first entry wasn't 1").to.be.equal(1)
+            expect(results.grid[1][1].int, "second entry qty wasn't 2").to.be.equal(2)
             expect(results.grid, "data didn't have 3 rows").to.have.lengthOf(3)
         })
 
-        it('fails when when retrieving a non existent bomId', async () => {
+        it('is true when when retrieving a non existent bomId, means an empty bom', async () => {
             const results = await bom.getAllTableData(999)
-            expect(results.success, 'success was true').to.be.false
+            expect(results.success, 'success was not true').to.be.true
         })
     })
 
     describe("createBom", ()=> {
-        let createdBomId = null
+        beforeEach(async ()=>{
+            await knex('boms').where({name: 'My New Bom'}).orWhere({name: 'Should not be a bom'}).del()
+        })
+
         afterEach(async ()=>{
-            if (createdBomId) {
-                await knex('boms').where('id', '=', createdBomId).del()
-            }
+            await knex('boms').where({name: 'My New Bom'}).orWhere({name: 'Should not be a bom'}).del()
         })
 
         it('creates a bom', async () => {
             const results = await bom.createBom(userId, "My New Bom")
-            if(results.success) {
-                createdBomId = results.id
-            }
             expect(results.success, "success was not true").to.be.true
-            expect(results.id).to.be.an.integer()
-            expect(results.name).to.be.equal("My New Bom")
+            expect(results.bom.id, "not an int").to.be.an.integer()
+            expect(results.bom.name).to.be.equal("My New Bom")
         })
 
         it("it doesn't create a bom with an invalid user", async () => {
-            const results = await bom.createBom(9999, "My New Bom")
-            if(results.success) {
-                createdBomId = results.id
-            }
+            const results = await bom.createBom(9999, "Should not be a bom")
             expect(results.success).to.be.false
         })
     })
     describe("listBoms", ()=> {
+        beforeEach(async ()=>{
+            await knex('boms').where({name: 'My New Bom'}).orWhere({name: 'Should not be a bom'}).del()
+        })
 
         it('list a bom for user', async () => {
             const results = await bom.listBoms(userId)
             expect(results.success, "success was not true").to.be.true
-            expect(results.data, 'data did not match').to.have.ordered.deep.members([{id: 1, name: 'Demo Bom'}])
+            expect(results.bomNames, 'data did not match').to.have.ordered.deep.members([{id: 1, name: 'Demo Bom'}])
         })
 
         it("it returns an empty list for a non-existing user", async () => {
             const results = await bom.listBoms(9999)
             expect(results.success).to.be.true
-            expect(results.data).to.be.empty
+            expect(results.bomNames).to.be.empty
         })
     })
 })
