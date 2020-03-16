@@ -64,6 +64,11 @@ describe("bom services", () => {
 
     describe("getAllTableData", () => {
         beforeEach( async () => {
+            await knex.raw('TRUNCATE TABLE bom_entries CASCADE')
+            await knex.raw('TRUNCATE TABLE parts CASCADE')
+            await knex.raw('TRUNCATE TABLE manufacturers CASCADE')
+            await knex.raw('TRUNCATE TABLE footprints CASCADE')
+            await knex.raw('TRUNCATE TABLE descriptions CASCADE')
             await knex.seed.run({specific: 'bom_entries-test-data.js'})
         })
 
@@ -127,4 +132,47 @@ describe("bom services", () => {
             expect(results.bomNames).to.be.empty
         })
     })
+
+    describe("updateRow", ()=> {
+        beforeEach( async () => {
+            await knex.raw('TRUNCATE TABLE bom_entries CASCADE')
+            await knex.raw('TRUNCATE TABLE parts CASCADE')
+            await knex.raw('TRUNCATE TABLE manufacturers CASCADE')
+            await knex.raw('TRUNCATE TABLE footprints CASCADE')
+            await knex.raw('TRUNCATE TABLE descriptions CASCADE')
+            await knex.seed.run({specific: 'bom_entries-test-data.js'})
+        })
+
+        afterEach( async () => {
+            await knex.raw('TRUNCATE TABLE bom_entries CASCADE')
+            await knex.raw('TRUNCATE TABLE parts CASCADE')
+            await knex.raw('TRUNCATE TABLE manufacturers CASCADE')
+            await knex.raw('TRUNCATE TABLE footprints CASCADE')
+            await knex.raw('TRUNCATE TABLE descriptions CASCADE')
+        })
+        it('update qty', async () => {
+            let queryResult = await knex('bom_entries').where('id', 1).select('qty')
+            expect(queryResult[0].qty, "original qty wasn't 3").to.be.equal(3)
+            const updateResult = await bom.updateRow({entryId: 1, qty: {int: 9}})
+            expect(updateResult.success, "success was not true").to.be.true
+            queryResult = await knex('bom_entries').where('id', 1).select('qty')
+            expect(queryResult[0].qty, 'data did not match').to.be.equal(9)
+        })
+
+        it('update refDes', async () => {
+            let queryResult = await knex('bom_entries').where('id', 2).select('ref_des')
+            expect(queryResult[0].ref_des, "original refDes wasn't 'R1,R2'").to.be.equal('R1,R2')
+            const updateResult = await bom.updateRow({entryId: 2, refDes: {string: 'U8, U9, U10'}})
+            expect(updateResult.success, "success was not true").to.be.true
+            queryResult = await knex('bom_entries').where('id', 2).select('ref_des')
+            expect(queryResult[0].ref_des, 'data did not match').to.be.equal('U8, U9, U10')
+        })
+
+        it('update should fail on no existent entry', async () => {
+            const updateResult = await bom.updateRow({entryId: 9999, refDes: {string: 'F3'}})
+            expect(updateResult.success, "success was not false").to.be.false
+        })
+
+    })
 })
+

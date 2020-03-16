@@ -65,7 +65,7 @@ bom.getAllTableData = async (bomId) => {
         if (data.length > 0) {
             return {success: true, grid: formattedData}
         }
-        else if (data.length == 0)
+        else if (data.length === 0)
             return {success: true, grid: []}
         else {
             return {success: false, grid: []}
@@ -103,7 +103,7 @@ bom.updateRow = async updateRowInput => {
     if(updateRowInput.hasOwnProperty('refDes')) {
         simpleUpdates.ref_des = updateRowInput.refDes.string
     }
-    console.log(simpleUpdates)
+
     try {
         const result = await knex('bom_entries').where('id', '=', entryId).update(simpleUpdates)
     }
